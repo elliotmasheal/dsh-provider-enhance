@@ -4,6 +4,10 @@
   "description": "Multiple named configurations (subscriptions/accounts) per third-party model provider inside DeepSeek Harness's Models settings page.",
   "license": "MIT",
   "author": "有彭 (Youpeng) <https://github.com/elliotmasheal>",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "type": "module",
   "keywords": [
     "deepseek-harness",

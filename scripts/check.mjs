@@ -73,6 +73,12 @@ if (uiManifest !== undefined) {
   if (!Array.isArray(uiManifest.files) || !uiManifest.files.includes('locale/*.json')) {
     fail('packages/ui/package.json: files must include "locale/*.json"')
   }
+  if (uiManifest.publishConfig?.registry !== 'https://registry.npmjs.org/') {
+    fail('packages/ui/package.json: publishConfig.registry must be https://registry.npmjs.org/ (a local npm mirror must not receive the publish)')
+  }
+  if (uiManifest.publishConfig?.access !== 'public') {
+    fail('packages/ui/package.json: publishConfig.access must be public')
+  }
 }
 
 // The installed plugin name shown by DSH comes from these locale dictionaries.

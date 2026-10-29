@@ -2,6 +2,7 @@
 
 [![ci](https://github.com/elliotmasheal/dsh-provider-enhance/actions/workflows/ci.yml/badge.svg)](https://github.com/elliotmasheal/dsh-provider-enhance/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![npm](https://img.shields.io/npm/v/dsh-provider-enhance.svg)](https://www.npmjs.com/package/dsh-provider-enhance)
 [![DSH](https://img.shields.io/badge/DSH-0.2.1--rc.3-4B32C3)](https://github.com/elliotmasheal/dsh-provider-enhance#兼容性与风险)
 
 [English](README.md) | **中文**
@@ -52,6 +53,8 @@ node scripts/install.mjs --profile desktop
 - `--profile <名称>`：安装到 `desktop` 之外的 profile。
 
 安装脚本会修改 profile manifest，如果你把 profile 纳入版本管理，建议先跑一次 `--dry-run` 看看改动。
+
+UI bundle 也发布到了 npm：[`dsh-provider-enhance`](https://www.npmjs.com/package/dsh-provider-enhance)。但它只有 Web 半边：内置适配器不接受 `accounts`，单独装 npm 包只会出现配置界面，provider 加载会失败。上面的安装脚本会同时装两半；如果从 npm 安装，还要把 `packages/adapter` 链接进 profile。
 
 ## 使用
 

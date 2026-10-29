@@ -50,18 +50,32 @@ git push origin main vX.Y.Z
 
 The `release` workflow creates the GitHub release with generated notes.
 
-## npm (optional, UI bundle only)
+## npm (UI bundle only)
 
-The UI half can be published; the adapter cannot (its package name belongs to
-DSH and the override must stay a local link).
+The UI half is published as
+[`dsh-provider-enhance`](https://www.npmjs.com/package/dsh-provider-enhance);
+the adapter cannot be published (its package name belongs to DSH and the
+override must stay a local link).
 
-```sh
-cd packages/ui
-npm publish --provenance --access public
-```
+`packages/ui/package.json` pins `publishConfig.registry` to
+`https://registry.npmjs.org/` and `access: public`, so a local mirror registry
+(such as `registry.npmmirror.com`) can never receive the publish.
 
-Only do this once the README explains that the adapter is a separate install
-step; otherwise every npm user reports "nothing happens".
+To release a new version:
+
+1. bump `packages/ui/package.json` (and the root `package.json` with it);
+2. update `CHANGELOG.md` and both READMEs;
+3. `cd packages/ui && npm publish`;
+4. verify with
+   `npm view dsh-provider-enhance version dist-tags --registry=https://registry.npmjs.org`
+   and `npm pack dsh-provider-enhance@<version>`.
+
+The account has `auth-and-writes`, so a plain publish needs an OTP or a token
+with bypass enabled. Do not commit a token or put it in a workflow file; use
+npm's trusted publishing for CI later.
+
+A new package may briefly appear as `0.0.0-stage` while npm processes the
+upload; the real version becomes `latest` once processing finishes.
 
 ## After a DSH upgrade
 

@@ -23,6 +23,9 @@ Open-source readiness; the plugin's behavior is unchanged.
 - Added `scripts/install-test-peers.mjs` (peers for local tests),
   `scripts/pack-check.mjs`, accounts-helper tests, CodeQL, Dependabot and a
   tag-triggered release workflow.
+- Published the UI bundle to npm as
+  [`dsh-provider-enhance@0.2.1`](https://www.npmjs.com/package/dsh-provider-enhance)
+  (UI half only; the adapter remains a profile link).
 - Both packages are versioned `0.2.1`.
 
 ## 0.2.0 — 2026-10-29

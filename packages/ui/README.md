@@ -1,7 +1,15 @@
 # dsh-provider-enhance
 
-Browser half of this repository: a DeepSeek Harness Web client plugin that
-renders the configuration list inside the Models settings page.
+Web client half of [ProviderEnhance](https://github.com/elliotmasheal/dsh-provider-enhance)
+for DeepSeek Harness: a slot plugin that renders the configuration list inside
+the Models settings page.
+
+> **This package is only the browser bundle.** ProviderEnhance also patches the
+> bundled `@deepseek-ai/dsh-llm-pi-ai` adapter, and the stock adapter rejects the
+> `accounts` field this UI writes. Installing this npm package alone shows the
+> editor but breaks provider loading. Install both halves with the repository's
+> `scripts/install.mjs` — see the
+> [main README](https://github.com/elliotmasheal/dsh-provider-enhance#install).
 
 - Bundle manifest: `package.json` → `dsh.bundle.patch` (`cordis.patch.yml`).
 - Display name: `locale/en.json` (`ProviderEnhance`) and `locale/zh.json`

@@ -2,6 +2,7 @@
 
 [![ci](https://github.com/elliotmasheal/dsh-provider-enhance/actions/workflows/ci.yml/badge.svg)](https://github.com/elliotmasheal/dsh-provider-enhance/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![npm](https://img.shields.io/npm/v/dsh-provider-enhance.svg)](https://www.npmjs.com/package/dsh-provider-enhance)
 [![DSH](https://img.shields.io/badge/DSH-0.2.1--rc.3-4B32C3)](https://github.com/elliotmasheal/dsh-provider-enhance#compatibility-and-risks)
 
 **English** | [Chinese](README.zh.md)
@@ -72,6 +73,13 @@ Options:
 
 The installer edits the profile manifest, so review it with `--dry-run` first if
 you keep the profile under version control.
+
+The UI bundle is also published on npm as
+[`dsh-provider-enhance`](https://www.npmjs.com/package/dsh-provider-enhance).
+It is only the Web half: the stock adapter rejects `accounts`, so installing the
+npm package alone shows the configuration editor but breaks provider loading.
+The installer above adds both halves; if you install from npm, link
+`packages/adapter` into the profile as well.
 
 ## Use
 

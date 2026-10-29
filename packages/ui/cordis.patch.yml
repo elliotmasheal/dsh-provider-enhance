@@ -1,0 +1,3 @@
+- insert:
+    - id: models-provider-configs
+      name: 'dsh-provider-enhance'

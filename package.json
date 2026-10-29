@@ -1,0 +1,22 @@
+{
+  "name": "dsh-provider-enhance-repo",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Multiple configurations per third-party model provider for DeepSeek Harness",
+  "license": "MIT",
+  "author": "有彭 (Youpeng) <https://github.com/elliotmasheal>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elliotmasheal/dsh-provider-enhance.git"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "scripts": {
+    "check": "node scripts/check.mjs",
+    "test": "node --test tests/headers.test.mjs",
+    "install:plugin": "node scripts/install.mjs",
+    "uninstall:plugin": "node scripts/uninstall.mjs"
+  }
+}

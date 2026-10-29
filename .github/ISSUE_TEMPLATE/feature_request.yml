@@ -1,0 +1,41 @@
+name: Feature request
+description: Suggest a behavior or integration for dsh provider enhance
+title: 'feat: '
+labels: ['enhancement']
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do that the plugin does not support today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: What should happen, and where (Models page, chat list, installer, adapter)?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - UI only (Models page)
+        - Adapter / routing
+        - Installer / packaging
+        - Documentation
+    validations:
+      required: true
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Constraints
+      options:
+        - label: This does not require editing files outside the profile and the plugin.
+        - label: I understand the adapter is pinned to a DSH build and may need re-patching.

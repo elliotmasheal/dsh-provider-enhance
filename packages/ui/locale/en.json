@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "ProviderEnhance",
+    "description": "One third-party provider with many named configurations: each configuration has its own name, API key, endpoint, protocol and model list. Edit them in Settings → Models."
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "name": "dsh-provider-enhance",
+  "version": "0.2.0",
+  "description": "Multiple named configurations (subscriptions/accounts) per third-party model provider inside DeepSeek Harness's Models settings page.",
+  "license": "MIT",
+  "author": "有彭 (Youpeng) <https://github.com/elliotmasheal>",
+  "type": "module",
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "pi-ai",
+    "opencode-go",
+    "multi-account",
+    "provider-config"
+  ],
+  "engines": {
+    "dsh": "^0.2.1-rc.3"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./icon": "./icon.svg",
+    "./locale/*.json": "./locale/*.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "icon.svg",
+    "locale/*.json",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node ../scripts/check.mjs"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-settings-models"
+      ]
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elliotmasheal/dsh-provider-enhance.git",
+    "directory": "packages/ui"
+  },
+  "homepage": "https://github.com/elliotmasheal/dsh-provider-enhance#readme",
+  "bugs": {
+    "url": "https://github.com/elliotmasheal/dsh-provider-enhance/issues"
+  }
+}

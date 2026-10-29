@@ -1,0 +1,47 @@
+{
+  "name": "@deepseek-ai/dsh-llm-pi-ai",
+  "version": "0.2.1-rc.3",
+  "private": true,
+  "description": "Patched pi-ai adapter for DeepSeek Harness: a provider profile may carry an `accounts` array, so one installed catalog provider serves several named credential configurations.",
+  "license": "MIT",
+  "type": "module",
+  "main": "lib/index.js",
+  "engines": {
+    "dsh": "^0.2.1-rc.3"
+  },
+  "exports": {
+    ".": "./lib/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "LICENSE",
+    "NOTICE.md",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/dsh-brand": "^0.2.1-rc.3",
+    "@deepseek-ai/dsh-util-values": "^0.2.1-rc.3",
+    "@deepseek-ai/schemastery": "~3.18.5",
+    "@earendil-works/pi-ai": "^1.1.0",
+    "@deepseek-ai/cordis": "~4.0.5",
+    "@deepseek-ai/dsh-attachment": "^0.2.1-rc.3",
+    "@deepseek-ai/dsh-authorization": "^0.2.1-rc.3",
+    "@deepseek-ai/dsh-credentials": "^0.2.1-rc.3",
+    "@deepseek-ai/dsh-fs": "^0.2.1-rc.3",
+    "@deepseek-ai/dsh-launch-environment": "^0.2.1-rc.3",
+    "@deepseek-ai/dsh-llm": "^0.2.1-rc.3",
+    "@deepseek-ai/dsh-timeout": "^0.2.1-rc.3",
+    "@deepseek-ai/cordis-plugin-loader": "~1.0.6"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis-plugin-loader": {
+      "optional": true
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elliotmasheal/dsh-provider-enhance.git",
+    "directory": "packages/adapter"
+  }
+}

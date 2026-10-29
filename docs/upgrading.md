@@ -4,6 +4,35 @@
 installed DSH build and patched. It targets `@deepseek-ai/dsh-llm-pi-ai`
 0.2.1-rc.3.
 
+## Automated path
+
+The changes are kept as a reviewable diff against the published upstream
+package: [`patches/0001-accounts-and-headers.patch`](../patches/0001-accounts-and-headers.patch).
+`scripts/sync-adapter.mjs` downloads that exact upstream release from npm,
+applies the patches and compares the result with the committed file:
+
+```sh
+node scripts/sync-adapter.mjs --check    # CI runs this
+node scripts/sync-adapter.mjs --write    # regenerate packages/adapter/lib/index.js
+node scripts/sync-adapter.mjs --version 0.2.1-rc.4 --write
+```
+
+When DSH updates:
+
+1. set `engines.dsh` (and the peer ranges) in `packages/adapter/package.json` to
+   the new version;
+2. run `node scripts/sync-adapter.mjs --write`;
+3. `git diff patches/` to review what changed upstream — a patch that no longer
+   applies fails with the upstream context, which is exactly the place to fix it;
+4. run `node scripts/check.mjs`, the header tests and
+   `node scripts/pack-check.mjs`;
+5. smoke-test two configurations of one provider.
+
+The manual steps below remain the reference for what each patch does and are the
+fallback when the upstream build is not on npm.
+
+## Manual path
+
 When DSH updates:
 
 1. Extract the new `@deepseek-ai/dsh-llm-pi-ai/lib/index.js` from the installed

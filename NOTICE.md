@@ -10,6 +10,11 @@ A modified copy of `@deepseek-ai/dsh-llm-pi-ai` (MIT License, Copyright (c)
 from an earlier MIT-licensed alias fork (Copyright (c) 2026 Dax233); that code
 now lives here, and no separate alias package is installed or required.
 
+The machine-readable form of these changes is
+[`patches/0001-accounts-and-headers.patch`](patches/0001-accounts-and-headers.patch);
+`scripts/sync-adapter.mjs` reproduces the committed file from the npm release
+plus that patch.
+
 Modifications in this repository:
 
 - `accounts` on a provider profile: every entry becomes one servable route.

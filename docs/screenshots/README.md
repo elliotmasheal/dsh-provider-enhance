@@ -1,14 +1,13 @@
 # Screenshots
 
-Drop the images referenced by the commented block in `README.md` here:
+Referenced by both `README.md` and `README.zh.md`.
 
-| File | Content |
+| File | Shows |
 | --- | --- |
-| `configurations.png` | A provider card with several collapsed configurations |
-| `editor.png` | One configuration expanded: name, key, customized settings, model list |
-| `chat-groups.png` | The chat model picker grouped by configuration names |
+| `provider-configurations.png` | The Models page: an OpenCode Go card with two peer configurations (`opencode-go-google`, `opencode-go-github`) and the Add configuration button. |
+| `model-picker.png` | The chat model picker, grouped by configuration name. |
 
-Rules:
-
-- Show only fictional configuration names and an empty or masked key field.
-- Use the default theme; avoid OS-specific chrome.
+To refresh them: open Settings → Models with at least two configurations of one
+catalog provider, and the chat model picker with the same profile. Crop to the
+card and the picker; do not include API keys, account identifiers or other
+private data.

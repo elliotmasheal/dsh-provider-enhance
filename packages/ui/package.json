@@ -1,6 +1,6 @@
 {
   "name": "dsh-provider-enhance",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Multiple named configurations (subscriptions/accounts) per third-party model provider inside DeepSeek Harness's Models settings page.",
   "license": "MIT",
   "author": "有彭 (Youpeng) <https://github.com/elliotmasheal>",

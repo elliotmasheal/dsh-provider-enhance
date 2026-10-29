@@ -1,0 +1,311 @@
+diff --git a/lib/index.js b/lib/index.js
+index 4b1e5ad..30cb278 100644
+--- a/lib/index.js
++++ b/lib/index.js
+@@ -655,8 +655,9 @@ function resolveModelCompat(provider, entry, route, base, api) {
+ */
+ function resolveRouteModels(request, validation = "strict") {
+ 	const { provider } = request;
+-	const defaults = catalogModels(provider);
+-	const providerBaseUrl = catalogProvider(provider)?.baseUrl;
++	const catalogId = request.catalog ?? provider;
++	const defaults = catalogModels(catalogId);
++	const providerBaseUrl = catalogProvider(catalogId)?.baseUrl;
+ 	const configured = request.models ?? [];
+ 	const overrides = request.modelOverrides ?? {};
+ 	const modelErrors = /* @__PURE__ */ new Map();
+@@ -686,6 +687,8 @@ function resolveRouteModels(request, validation = "strict") {
+ 		if (seen.has(entry.id)) invalid(provider, `lists model "${entry.id}" more than once`);
+ 		seen.add(entry.id);
+ 		const base = defaults.get(entry.id);
++		/* A configuration's own protocol and endpoint win over the catalog; the
++		   catalog supplies the defaults and each known model's metadata. */
+ 		const api = request.api ?? base?.api ?? routeApi;
+ 		if (api === void 0) invalid(provider, `model "${entry.id}" needs an api; the installed catalog does not describe it, so set the route's api to the wire protocol its endpoint speaks`);
+ 		const baseUrl = request.baseURL ?? base?.baseUrl ?? providerBaseUrl;
+@@ -917,6 +920,20 @@ function reuseCatalogProvider(base, spec) {
+ 		streamSimple: (model, context, options) => base.streamSimple(model, context, options)
+ 	};
+ }
++/**
++ * Whether a route can stream every one of its models through a catalog
++ * provider. The provider dispatches on each model's wire protocol and owns only
++ * the protocols its shipped models declare, so a route that forces another
++ * protocol for a model the catalog does not describe must keep the
++ * hand-declared provider instead.
++ * @param catalogId - installed catalog provider id.
++ * @param models - the route's materialized models.
++ * @returns whether every model's api is one the catalog provider implements.
++ */
++function catalogServesModels(catalogId, models) {
++	const apis = new Set([...catalogModels(catalogId).values()].map((model) => model.api));
++	return models.every((model) => apis.has(model.api));
++}
+ /**
+ * Build the pi-ai provider for one resolved route.
+ * @param spec - the resolved route facts.
+@@ -924,8 +941,9 @@ function reuseCatalogProvider(base, spec) {
+ * @throws Error when the route names a wire protocol this build cannot serve.
+ */
+ function buildProvider(spec) {
+-	const catalog = catalogProvider(spec.provider);
+-	if (catalog !== void 0 && spec.api === void 0) return reuseCatalogProvider(catalog, spec);
++	const catalogId = spec.catalog ?? spec.provider;
++	const catalog = catalogProvider(catalogId);
++	if (catalog !== void 0 && catalogServesModels(catalogId, spec.models)) return reuseCatalogProvider(catalog, spec);
+ 	const factory = spec.api === void 0 ? void 0 : PROTOCOLS[spec.api];
+ 	if (factory === void 0) throw new PiAiCatalogError(`llm-pi-ai: provider "${spec.provider}" names api "${spec.api}", which this build cannot serve; supported protocols are ${supportedProtocols().join(", ")}`);
+ 	return createProvider({
+@@ -1049,6 +1067,20 @@ const modelOverride = z.object(modelFields);
+ const profile = z.object({
+ 	apiKeyEnv: z.string().role("credential-ref"),
+ 	displayName: z.string(),
++	configName: z.string(),
++	catalog: z.string(),
++	accounts: z.array(z.object({
++		name: z.string().required(),
++		apiKeyEnv: z.string().role("credential-ref").required(),
++		catalog: z.string(),
++		api: z.union(supportedProtocols()),
++		baseURL: z.string(),
++		models: z.array(modelProfile),
++		modelOverrides: z.dict(modelOverride),
++		compat: compatProfile,
++		headers: z.dict(z.string()),
++		retryPolicy: RetryPolicySchema
++	})),
+ 	api: z.union(supportedProtocols()),
+ 	baseURL: z.string(),
+ 	models: z.array(modelProfile),
+@@ -1106,6 +1138,108 @@ function assertValidHeaders(provider, headers) {
+ 		throw new Error(`llm-pi-ai: provider "${provider}" header "${name}" is not valid for Fetch; use a valid HTTP field name and a single-line value representable as bytes`);
+ 	}
+ }
++/**
++ * Expand one route's `accounts` into hidden sibling routes.
++ *
++ * The LLM protocol identifies a route by one provider id with one display
++ * name, and the model picker groups models by route. `accounts` is the
++ * presentation-level way to keep several credentials under one configured
++ * route: each account becomes an internal route `<provider>#<n>` that
++ * inherits the base profile and the same catalog, differing only in display
++ * name and credential reference. The Models page lists the accounts inside
++ * the base route's card, and the provider directory leaves the internal
++ * routes out.
++ * @param providers - configured provider profiles keyed by route.
++ * @returns the same profiles plus one derived route per account.
++ */
++/**
++ * Overrides one account contributes to its derived route. Blank values are
++ * dropped so an editor that persisted `models: []` or `headers: {}` for a
++ * configuration that never set them inherits the provider defaults instead of
++ * replacing them with emptiness.
++ * @param account - one configured account entry.
++ * @returns the non-blank overrides, without the account name.
++ */
++function accountOverrides(account) {
++	const out = {};
++	for (const [key, value] of Object.entries(account)) {
++		if (key === "name" || value === undefined || value === null) continue;
++		if (Array.isArray(value) && value.length === 0) continue;
++		if (!Array.isArray(value) && typeof value === "object" && Object.keys(value).length === 0) continue;
++		out[key] = value;
++	}
++	return out;
++}
++/**
++ * The installed catalog a configured route resolves through. A provider the
++ * installed pi-ai catalog serves is its own catalog; a hand-declared route
++ * names one explicitly or inherits none. Synthesizing a route's own id for a
++ * provider the catalog does not serve would make resolution reject the route,
++ * which is why a hand-declared provider stays catalog-less.
++ * @param provider - configured route id.
++ * @param source - that provider's configured profile.
++ * @returns the catalog id to inherit, or undefined.
++ */
++function inheritedCatalog(provider, source) {
++	return source.catalog ?? (catalogProvider(provider) === void 0 ? void 0 : provider);
++}
++/**
++ * Overlay one account on its provider profile. `headers` merges field by field
++ * — an account that adds one header keeps the provider's others — while every
++ * other field replaces wholesale.
++ * @param base - the provider profile without `accounts`.
++ * @param overrides - the account's non-blank fields.
++ * @returns the route profile this account contributes.
++ */
++function overlayAccount(base, overrides) {
++	const merged = {
++		...base,
++		...overrides
++	};
++	if (base.headers !== void 0 || overrides.headers !== void 0) merged.headers = {
++		...base.headers,
++		...overrides.headers
++	};
++	return merged;
++}
++function expandAccounts(providers) {
++	const expanded = {};
++	for (const [provider, source] of Object.entries(providers ?? {})) {
++		const accounts = source !== null && typeof source === "object" && Array.isArray(source.accounts) ? source.accounts : [];
++		if (accounts.length === 0) {
++			expanded[provider] = source;
++			continue;
++		}
++		const names = new Set();
++		const claim = (name) => {
++			const key = String(name ?? "").trim();
++			if (key.length === 0) return;
++			if (names.has(key)) throw new Error(`llm-pi-ai: provider "${provider}" repeats configuration name "${key}"; configuration names must be unique within one provider`);
++			names.add(key);
++		};
++		accounts.forEach((account) => claim(account.name));
++		const { accounts: _accounts, ...base } = source;
++		const [first, ...rest] = accounts;
++		const firstOverrides = accountOverrides(first);
++		const firstCatalog = firstOverrides.catalog ?? inheritedCatalog(provider, source);
++		expanded[provider] = {
++			...overlayAccount(base, firstOverrides),
++			...firstCatalog === void 0 ? {} : { catalog: firstCatalog },
++			apiKeyEnv: first.apiKeyEnv,
++			configName: first.name
++		};
++		rest.forEach((account, index) => {
++			const overrides = accountOverrides(account);
++			const catalog = overrides.catalog ?? inheritedCatalog(provider, source);
++			expanded[`${provider}#${index + 2}`] = {
++				...overlayAccount(base, overrides),
++				...catalog === void 0 ? {} : { catalog },
++				displayName: account.name
++			};
++		});
++	}
++	return expanded;
++}
+ /**
+ * Resolve scalar defaults and materialize each route's serviceable models.
+ * Deferred catalog validation retains diagnostics without deleting configured
+@@ -1116,7 +1250,7 @@ function assertValidHeaders(provider, headers) {
+ */
+ function resolveProfiles(providers, validation = "strict") {
+ 	if (Array.isArray(providers)) throw new Error("llm-pi-ai: providers is now a dict keyed by provider route, not an array of profiles");
+-	const entries = Object.entries(providers ?? {});
++	const entries = Object.entries(expandAccounts(providers));
+ 	const resolved = /* @__PURE__ */ new Map();
+ 	for (const [provider, source] of entries) {
+ 		rejectRemovedFields(provider, source);
+@@ -1135,12 +1269,17 @@ function resolveProfiles(providers, validation = "strict") {
+ 		const defaultInput = [...source.defaultInput ?? DEFAULT_INPUT];
+ 		if (defaultInput.length === 0) throw new Error(`llm-pi-ai: provider "${provider}" defaultInput must name at least one modality`);
+ 		const displayName = source.displayName ?? provider;
++		if (source.catalog !== void 0) {
++			if (source.catalog.length === 0) throw new Error(`llm-pi-ai: provider "${provider}" has an empty catalog`);
++			if (catalogProvider(source.catalog) === void 0) throw new Error(`llm-pi-ai: provider "${provider}" names catalog "${source.catalog}", which the installed pi-ai catalog does not serve`);
++		}
+ 		let catalog;
+ 		let piProvider;
+ 		let catalogError;
+ 		try {
+ 			catalog = resolveRouteModels({
+ 				provider,
++				...source.catalog === void 0 ? {} : { catalog: source.catalog },
+ 				...source.api === void 0 ? {} : { api: source.api },
+ 				...source.baseURL === void 0 ? {} : { baseURL: source.baseURL },
+ 				...source.models === void 0 ? {} : { models: source.models },
+@@ -1154,6 +1293,7 @@ function resolveProfiles(providers, validation = "strict") {
+ 			piProvider = buildProvider({
+ 				provider,
+ 				displayName,
++				...source.catalog === void 0 ? {} : { catalog: source.catalog },
+ 				...source.api === void 0 ? {} : { api: source.api },
+ 				...source.baseURL === void 0 ? {} : { baseURL: source.baseURL },
+ 				models: catalog.models,
+@@ -1813,10 +1953,31 @@ function reasoningInfo(model, defaultLevel) {
+ 		...defaultLevel === void 0 ? {} : { defaultEffort: ReasoningEffortId(defaultLevel) }
+ 	} };
+ }
+-/** Merge deployment headers while removing case-insensitive attribution collisions. */
+-function requestHeaders(headers) {
++/** The per-conversation routing header the OpenCode catalog provider injects itself. */
++const OPENCODE_SESSION_HEADER = "x-opencode-session";
++/**
++ * Catalog routes whose transport owns the per-conversation session header.
++ * Only these routes let the adapter reserve that name: a hand-declared route
++ * pointed at the same endpoint has no provider wrapper to re-add it, so its
++ * configured header must survive untouched.
++ * @param catalog - the route's catalog id, when any.
++ * @returns whether the route dispatches through pi-ai's OpenCode provider.
++ */
++function openCodeRoute(catalog) {
++	return catalog === "opencode" || catalog === "opencode-go";
++}
++/**
++ * Merge deployment headers while removing case-insensitive attribution
++ * collisions. An OpenCode route also drops a configured session header so the
++ * provider wrapper can put the live conversation id there instead.
++ * @param headers - the route's configured headers, when any.
++ * @param catalog - the route's catalog id, when any.
++ * @returns the headers to send, with attribution last.
++ */
++function requestHeaders(headers, catalog) {
+ 	const attribution = attributionHeaders();
+ 	const reserved = new Set(Object.keys(attribution).map((name) => name.toLowerCase()));
++	if (openCodeRoute(catalog)) reserved.add(OPENCODE_SESSION_HEADER);
+ 	return {
+ 		...Object.fromEntries(Object.entries(headers ?? {}).filter(([name]) => !reserved.has(name.toLowerCase()))),
+ 		...attribution
+@@ -1876,9 +2037,10 @@ var PiAiAdapter = class extends LlmAdapter {
+ 		return resolved;
+ 	}
+ 	providerInfo(provider) {
++		const profile = this.current().profiles.get(provider);
+ 		return {
+ 			id: provider,
+-			name: this.current().profiles.get(provider)?.displayName ?? provider
++			name: profile?.configName ?? profile?.displayName ?? provider
+ 		};
+ 	}
+ 	providerRetryPolicy(provider) {
+@@ -1986,7 +2148,7 @@ var PiAiAdapter = class extends LlmAdapter {
+ 					...options.maxTokens === void 0 ? {} : { maxTokens: options.maxTokens },
+ 					...options.sessionId === void 0 ? {} : { sessionId: String(options.sessionId) },
+ 					signal: watchdog.signal,
+-					headers: requestHeaders(profile.headers)
++					headers: requestHeaders(profile.headers, profile.catalog ?? profile.provider)
+ 				}), model.contextWindow, options.signal, model.id)[Symbol.asyncIterator]();
+ 				let exhausted = false;
+ 				try {
+@@ -2840,8 +3002,8 @@ function registrationFacts(profiles) {
+ */
+ function directoryEntries(profiles, settingsNs) {
+ 	const entries = /* @__PURE__ */ new Map();
+-	const declare = (provider, displayName, error) => {
+-		const installed = catalogProvider(provider);
++	const declare = (provider, displayName, error, catalogId) => {
++		const installed = catalogProvider(catalogId ?? provider);
+ 		entries.set(provider, {
+ 			provider,
+ 			displayName,
+@@ -2852,8 +3014,19 @@ function directoryEntries(profiles, settingsNs) {
+ 			...error === void 0 ? {} : { error }
+ 		});
+ 	};
+-	for (const provider of catalogProviderIds()) declare(provider, provider);
+-	for (const [provider, profile] of profiles) declare(provider, profile.displayName, profile.catalogError);
++	/* A catalog provider is titled by pi-ai's own product name, never by a
++	   settings displayName: the supplier name is the third-party provider's
++	   name, and configurations are named on their accounts instead. */
++	const installedName = (provider) => catalogProvider(provider)?.name ?? provider;
++	for (const provider of catalogProviderIds()) declare(provider, installedName(provider));
++	for (const [provider, profile] of profiles) {
++		/* Account routes are internal: the base route's card manages them, and a
++		   pre-release alias route (a catalog without an account name) is also
++		   managed there. Neither may surface as a provider row of its own. */
++		if (provider.includes("#") || profile.catalog !== void 0 && profile.configName === void 0) continue;
++		const installed = catalogProvider(provider);
++		declare(provider, installed === void 0 ? profile.displayName : installed.name, profile.catalogError);
++	}
+ 	return [...entries.values()];
+ }
+ /** Register one generic pi-ai adapter for all configured provider routes. */

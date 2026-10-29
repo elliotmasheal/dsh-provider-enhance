@@ -1,5 +1,5 @@
 name: Bug report
-description: Something in dsh provider enhance does not work as documented
+description: Something in ProviderEnhance does not work as documented
 title: 'bug: '
 labels: ['bug']
 body:
@@ -7,6 +7,8 @@ body:
     attributes:
       value: |
         Please remove API keys and account names from logs and screenshots.
+        Running `node scripts/doctor.mjs --profile desktop` first usually makes
+        the report much faster to answer.
   - type: input
     id: dsh-version
     attributes:
@@ -18,8 +20,8 @@ body:
   - type: input
     id: plugin-version
     attributes:
-      label: dsh provider enhance version
-      placeholder: 0.1.0
+      label: ProviderEnhance version
+      placeholder: 0.2.1
     validations:
       required: true
   - type: dropdown
@@ -64,6 +66,12 @@ body:
       label: Redacted `llm-pi-ai` configuration
       description: Copy the `providers:` block from the profile's `cordis.patch.yml`, replacing key names with placeholders.
       render: yaml
+  - type: textarea
+    id: doctor
+    attributes:
+      label: `node scripts/doctor.mjs --profile desktop` output
+      description: Copy the whole report; it contains no API keys.
+      render: text
   - type: input
     id: os
     attributes:

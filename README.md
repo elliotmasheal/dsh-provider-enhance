@@ -1,55 +1,41 @@
-# dsh provider enhance
+# ProviderEnhance
 
 [![ci](https://github.com/elliotmasheal/dsh-provider-enhance/actions/workflows/ci.yml/badge.svg)](https://github.com/elliotmasheal/dsh-provider-enhance/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![DSH](https://img.shields.io/badge/DSH-0.2.1--rc.3-4B32C3)](https://github.com/elliotmasheal/dsh-provider-enhance#compatibility)
+[![DSH](https://img.shields.io/badge/DSH-0.2.1--rc.3-4B32C3)](https://github.com/elliotmasheal/dsh-provider-enhance#compatibility-and-risks)
 
-**One third-party provider, many named configurations.** DSH (DeepSeek Harness)
-binds one credential per provider route; this plugin turns the provider profile
-into a container of equally-editable configurations — each with its own name,
-API key, endpoint, wire protocol and model list. Chat's model picker groups
-models by those configuration names.
+**English** | [Chinese](README.zh.md)
 
-English | [中文](#中文)
+**One third-party provider, many named configurations.** DeepSeek Harness (DSH)
+binds one credential per provider route; ProviderEnhance turns a provider
+profile into a container of equally editable configurations — each with its own
+name, API key, endpoint, wire protocol and model list. Chat's model picker
+groups models by those configuration names.
 
-> Developed and tested against **DSH Desktop 0.2.1-rc.3** (Windows). The adapter
-> half is a patched build of the bundled `@deepseek-ai/dsh-llm-pi-ai`; see
-> [Compatibility](#compatibility) before upgrading DSH.
+> Built and tested against **DSH Desktop 0.2.1-rc.3** on Windows. The adapter
+> half is a patched build of the bundled `@deepseek-ai/dsh-llm-pi-ai`; read
+> [Compatibility and risks](#compatibility-and-risks) before upgrading DSH.
 
-Maintained by [有彭 (@elliotmasheal)](https://github.com/elliotmasheal).
+Maintained by [Youpeng (@elliotmasheal)](https://github.com/elliotmasheal).
 
 ## Screenshots
 
-<!-- Add images to docs/screenshots/ and reference them here, for example:
+![Configurations inside the Models page](docs/screenshots/provider-configurations.png)
 
-![Configurations](docs/screenshots/configurations.png)
-![Collapsed editor](docs/screenshots/editor.png)
-![Chat groups](docs/screenshots/chat-groups.png)
+*The Models page: one provider card holding several peer configurations, each
+with its own key, endpoint, protocol and model list.*
 
--->
-Screenshots will be added soon.
+![Chat model picker grouped by configuration names](docs/screenshots/model-picker.png)
 
-```
-Settings → Models → OpenCode Go
-┌────────────────────────────────────────────────────────────┐
-│  ● OpenCode Go · 主号            配置 1                   ▸ │
-│  ● OpenCode Go · 副号            配置 2                   ▾ │
-│    ┌──────────────────────────────────────────────────┐    │
-│    │ name  [OpenCode Go · 副号                      ]  │    │
-│    │ key   [••••••••••••••••]  Save  Clear             │    │
-│    │ Customized settings ▸                             │    │
-│    │                                    [ Save ] [Delete] │
-│    └──────────────────────────────────────────────────┘    │
-│                  + Add configuration                        │
-└────────────────────────────────────────────────────────────┘
-```
+*The chat model picker: models are grouped under configuration names
+(`opencode-go-google`, `opencode-go-github`, …).*
 
 ## Why
 
 A model route in DSH is one `provider` id with one display name, one credential
 reference and one model list; registering the same route twice fails with
 `DUPLICATE_ADAPTER`. That makes "two subscriptions of the same provider"
-impossible with the stock UI. This plugin keeps **one** provider id in
+impossible with the stock UI. ProviderEnhance keeps **one** provider id in
 configuration and expands its `accounts` into internal routes at load time, so
 each configuration gets its own credential and its own chat group while the
 Models page still shows a single provider row.
@@ -57,8 +43,8 @@ Models page still shows a single provider row.
 ## Install
 
 Requirements: DSH Desktop 0.2.x with the desktop profile, and the Node/pnpm that
-DSH ships (the script finds them). Node 22+ is only needed if you run the script
-with your own Node.
+DSH ships (the script finds them). Node 22+ is only needed when you run the
+script with your own Node.
 
 ```sh
 git clone https://github.com/elliotmasheal/dsh-provider-enhance.git
@@ -77,14 +63,20 @@ The installer:
 Restart DSH Desktop afterwards. The profile links to this clone, so keep the
 directory where it is (re-run the installer if you move it).
 
-- `--dry-run` prints the manifest changes.
+Options:
+
+- `--dry-run` prints the manifest changes without writing them.
 - `--no-install` skips pnpm; run `pnpm install` in the profile yourself.
 - `--home <DSH_HOME>` for a non-default harness home.
+- `--profile <name>` for a profile other than `desktop`.
+
+The installer edits the profile manifest, so review it with `--dry-run` first if
+you keep the profile under version control.
 
 ## Use
 
 1. **Settings → Models → Add model provider**, pick a third-party provider
-   (e.g. `opencode-go`) and paste the first subscription's API key.
+   (for example `opencode-go`) and paste the first subscription's API key.
 2. Open that provider's card. Its configurations are listed collapsed; use
    **+ Add configuration** to add the next subscription.
 3. Click a configuration row to expand it:
@@ -95,8 +87,8 @@ directory where it is (re-run the installer if you move it).
      for custom endpoints);
    - **Save**, **Delete** — configurations are peers; deleting the first one
      promotes the next without touching the provider's name.
-4. Chat: the model picker shows one group per configuration name. The provider's
-   own product name is only used as the Models-page row title.
+4. Chat: the model picker shows one group per configuration name. The
+   provider's own product name is only used as the Models-page row title.
 
 ## Configuration model
 
@@ -105,11 +97,11 @@ providers:
   opencode-go:                 # the only route id in configuration
     models: [...]              # provider defaults, inherited by configurations
     accounts:                  # configuration 1 … N, in order
-      - name: OpenCode Go · 主号
+      - name: opencode-go-google
         apiKeyEnv: OPENCODE_GO_API_KEY
-      - name: OpenCode Go · 副号
+      - name: opencode-go-github
         apiKeyEnv: OPENCODE_GO_2_API_KEY
-      - name: OpenCode Go · 第三份
+      - name: opencode-go-work
         apiKeyEnv: OPENCODE_GO_3_API_KEY
         baseURL: https://opencode.ai/zen/go
         api: openai-completions
@@ -130,6 +122,8 @@ providers:
   the provider's headers.
 - Configuration names must be unique per provider (client and adapter enforce
   it). Deleting the last configuration removes the provider entry.
+- Configuration 1's display name is stored as `configName`, so the provider's
+  product name never doubles as a chat group name.
 
 ## Request headers
 
@@ -150,35 +144,53 @@ headers, and the protocol headers pi-ai adds:
 - A hand-declared provider keeps its own `headers` untouched, including a
   custom session header, because no OpenCode provider wrapper is involved.
 
-## Repository layout
-
-| Path | What |
-| --- | --- |
-| `packages/adapter` | Patched `@deepseek-ai/dsh-llm-pi-ai` (drop-in override; not published) |
-| `packages/ui` | `dsh-provider-enhance` Web client bundle |
-| `scripts/install.mjs`, `scripts/uninstall.mjs` | profile installer/remover |
-| `scripts/check.mjs` | offline syntax/manifest/hygiene checks (also runs in CI) |
-| `tests/headers.test.mjs` | fake-fetch regression tests for the header contract |
-| `docs/upgrading.md` | how to re-patch the adapter after a DSH update |
-
-## Compatibility
+## Compatibility and risks
 
 - **Pinned to DSH 0.2.1-rc.3.** `packages/adapter/lib/index.js` is a built
-  artifact extracted from that build. After a DSH upgrade, re-run the upstream
-  extraction and re-apply the patches in `docs/upgrading.md`; the plugin fails to
-  load (or loses the accounts feature) otherwise.
-- The adapter overrides the bundled package by name, which is the only way a
+  artifact extracted from that build and patched. After a DSH upgrade, re-run
+  the upstream extraction and re-apply the patches in
+  [docs/upgrading.md](docs/upgrading.md); otherwise the plugin fails to load or
+  loses the accounts feature.
+- **The adapter overrides the bundled package by name**, which is the only way a
   plugin can replace it; this also means the override must be re-linked after a
-  DSH upgrade.
-- The Models page's per-provider **Edit** button is hidden for providers with
-  more than one configuration by a DOM lookup (`*_rowActions`). If a future build
-  renames that class, the button reappears; nothing else depends on it.
-- The stock **Add model provider** dropdown only lists unconfigured providers.
+  DSH upgrade. The override affects the whole profile, not only providers that
+  use configurations.
+- **The Models page's per-provider Edit button** is hidden for providers with
+  more than one configuration by a DOM lookup (`*_rowActions`). If a future
+  build renames that class, the button reappears; nothing else depends on it.
+- **The stock Add model provider dropdown** only lists unconfigured providers.
   Adding another configuration of an existing provider happens inside its card
   (`+ Add configuration`); this is a page-internal filter that slots cannot
   extend.
-- Provider profiles created by an older single-provider setup are not migrated
-  automatically: add a configuration and paste the existing key once.
+- **Provider profiles created by an older single-provider setup** are not
+  migrated automatically: add a configuration and paste the existing key once.
+- **Platform support:** tested on Windows only. The scripts use portable Node
+  APIs but macOS and Linux are unverified.
+- **Security:** the plugin runs in-process with the user's permissions and
+  writes to the DSH profile. See [SECURITY.md](SECURITY.md).
+
+This project is not affiliated with, endorsed by, or sponsored by DeepSeek.
+
+## Troubleshooting
+
+Run the diagnostic first:
+
+```sh
+node scripts/doctor.mjs --profile desktop
+```
+
+It checks the profile manifest, the linked adapter and UI bundle, the adapter
+patch markers, the `accounts` blocks, and the installed DSH version.
+
+Common issues:
+
+| Symptom | Likely cause |
+| --- | --- |
+| The Models page shows no configuration UI | The UI bundle is not in `dsh.profile.bundles`; re-run the installer and restart. |
+| Startup fails with "unexpected field `accounts`" | The patched adapter is no longer linked (for example after a DSH upgrade); re-run the installer. |
+| DSH does not start after uninstalling | `accounts` blocks remain in the profile's `cordis.patch.yml`; run `node scripts/uninstall.mjs` again or remove them by hand. |
+| Two configurations share a name | Names must be unique per provider; rename one. |
+| `Fetch models` returns nothing | The endpoint answered no models; check the base URL and key, or add models manually. |
 
 ## Uninstall
 
@@ -186,96 +198,46 @@ headers, and the protocol headers pi-ai adds:
 node scripts/uninstall.mjs --profile desktop
 ```
 
-Then delete any `accounts:` blocks from `llm-pi-ai` provider profiles in the
-profile's `cordis.patch.yml` — the stock adapter rejects unknown fields — and
-restart DSH.
+The script removes the adapter and UI dependencies, deselects the bundle, and —
+because the stock adapter rejects unknown fields — removes the `accounts:`
+blocks from the profile's `cordis.patch.yml` after writing a backup. Pass
+`--keep-accounts` to leave them in place. Restart DSH afterwards.
+
+## Repository layout
+
+| Path | What |
+| --- | --- |
+| `packages/adapter` | Patched `@deepseek-ai/dsh-llm-pi-ai` (drop-in override; not published) |
+| `packages/ui` | `dsh-provider-enhance` Web client bundle and locale dictionaries |
+| `patches/0001-accounts-and-headers.patch` | the adapter diff against the published upstream release |
+| `scripts/install.mjs`, `scripts/uninstall.mjs`, `scripts/doctor.mjs` | profile installer, remover and diagnostics |
+| `scripts/sync-adapter.mjs` | rebuilds `packages/adapter/lib/index.js` from npm + patches |
+| `scripts/check.mjs` | offline syntax/manifest/hygiene checks (also runs in CI) |
+| `tests/headers.test.mjs` | fake-fetch regression tests for the header contract |
+| `docs/upgrading.md` | how to re-patch the adapter after a DSH update |
+| `docs/architecture.md` | how the loader override, slots and route expansion fit together |
 
 ## Development
 
 ```sh
 node scripts/check.mjs
-DSH_INSTALL_DIR="<DeepSeek Harness install>" npm test
+npm test                       # header tests; need a DSH install (or peers below)
+node scripts/install-test-peers.mjs   # fetch the published DSH peer packages
+DSH_APP_NODE_MODULES=.test-dsh/node_modules npm test
+node scripts/sync-adapter.mjs --check # adapter == npm upstream + patches
+node scripts/pack-check.mjs           # published tarball contents
 ```
 
-Checks JavaScript syntax, manifests, slot/patch wiring, and scans the tree for
-personal absolute paths or secret-like strings. CI runs the same checks; the
-header tests need a DSH installation (they skip without one) and drive a real
-pi-ai provider with a fake fetch.
+`check.mjs` verifies JavaScript syntax, manifests, patch markers and scans the
+tree for personal absolute paths or secret-like strings. CI runs the same
+checks on Linux and Windows, and runs the header tests against the published
+DSH `0.2.1-rc.3` packages.
+
+Contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md). Please report
+security issues privately as described in [SECURITY.md](SECURITY.md).
 
 ## License
 
 MIT. `packages/adapter/lib/index.js` is a modified copy of
 `@deepseek-ai/dsh-llm-pi-ai` (MIT, Copyright (c) 2026 DeepSeek). See
 [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md).
-
----
-
-## 中文
-
-**一个第三方 provider，多条命名配置。** DSH 的一条模型路由只能有一个 provider
-id、一个显示名、一个凭据引用；本插件把 provider 配置变成 `accounts` 容器，每条
-配置都有自己的名称、API Key、端点、协议和模型清单，聊天页的模型列表按配置名
-分组。
-
-### 安装
-
-```sh
-git clone https://github.com/elliotmasheal/dsh-provider-enhance.git
-cd dsh-provider-enhance
-node scripts/install.mjs --profile desktop
-```
-
-脚本会把 `packages/adapter` 以 `@deepseek-ai/dsh-llm-pi-ai` 的名字链接进 profile
-（覆盖内置适配器），再链接 `packages/ui` 并加入 `dsh.profile.bundles`，最后用
-DSH 自带的 pnpm 安装。完成后**重启 DSH Desktop**。
-
-### 使用
-
-1. 设置 → 模型 → 添加模型供应商，选一个第三方 provider（如 `opencode-go`），填入
-   第一份订阅的 Key；
-2. 打开该 provider 的卡片，配置默认收起，点「+ 添加配置」添加第二份订阅；
-3. 点配置行展开：改名称（即聊天页分组名）、保存 Key、在「自定义设置」里改端点/
-   协议/模型（支持「一键获取模型」）、保存或删除；
-4. 聊天页的模型列表按配置名分组；供应商名称只作为模型页的行标题。
-
-配置名在同一 provider 内必须唯一；配置彼此平等，删除第一条会自动由下一条接管
-基础路由；全部删完后该 provider 条目移除。
-
-每条配置（包括第一条）都通过该 provider 已安装的 catalog 解析：catalog 提供每个已知
-模型的默认协议、端点、兼容性与元数据；配置里显式设置的 `api` / `baseURL` 优先于
-这些默认值，`models` 替换实际服务的模型清单。这样第一条和后续配置的行为一致。
-
-### 请求头
-
-- `user-agent` 固定为 `deepseek-harness/<版本> (+url)`，配置里写同名头会被丢弃；
-- 配置级的 `headers` 与 provider 级逐字段合并，不会整组替换；
-- `opencode-go` / `opencode` 路由由 pi-ai 注入 `x-opencode-session`，值是当前
-  DSH 会话 id；该头名被保留，配置里写死也会被丢弃。会话 id 在同一会话内（含
-  resume、压缩、标题请求）稳定，新会话/子代理才变化；
-- Responses 协议还会由 pi-ai 带上 `x-client-request-id`（同会话 id）；
-- 手写（非 catalog）provider 的 `headers` 原样保留，包括自定义会话头。
-
-### 兼容性
-
-- 仅适配 DSH **0.2.1-rc.3**；升级 DSH 后需要按 `docs/upgrading.md` 重新提取并
-  打补丁，否则插件无法加载或丢失多配置能力；
-- 多配置时模型页自带的「编辑」按钮通过 DOM 查找隐藏，未来版本若改类名会重新
-  出现，不影响其它功能；
-- 官方「添加模型供应商」下拉只列出未配置的 provider，给同一 provider 再加配置请
-  用卡片里的「+ 添加配置」。
-
-### 开发
-
-```sh
-node scripts/check.mjs
-DSH_INSTALL_DIR="<DeepSeek Harness 安装目录>" npm test
-```
-
-`check.mjs` 做语法/清单/补丁标记检查；`tests/headers.test.mjs` 用 fake fetch 驱动
-真实的 pi-ai，覆盖会话头、头合并与非 catalog provider。没有 DSH 安装时测试跳过。
-
-### 许可证
-
-MIT。`packages/adapter/lib/index.js` 是 `@deepseek-ai/dsh-llm-pi-ai`（MIT，
-Copyright (c) 2026 DeepSeek）的修改副本。详见 [LICENSE](LICENSE) 与
-[NOTICE.md](NOTICE.md)。

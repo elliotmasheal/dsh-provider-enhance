@@ -5,7 +5,7 @@
  * secrets in the published tree.
  */
 import { execFileSync } from 'node:child_process'
-import { copyFileSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, extname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -30,7 +30,7 @@ function readJson(path) {
 function walk(dir) {
   const out = []
   for (const entry of readdirSync(dir)) {
-    if (entry === 'node_modules' || entry === '.git') continue
+    if (entry === 'node_modules' || entry === '.git' || entry === '.test-dsh') continue
     const path = join(dir, entry)
     const info = statSync(path)
     if (info.isDirectory()) out.push(...walk(path))
@@ -90,6 +90,34 @@ if (adapterManifest !== undefined) {
   if (typeof adapterManifest.engines?.dsh !== 'string') fail('packages/adapter/package.json: engines.dsh')
 }
 
+// Root and UI versions move together; the adapter keeps the upstream version it
+// mirrors, so it is deliberately not part of this comparison.
+const rootManifest = readJson(join(root, 'package.json'))
+if (rootManifest !== undefined && uiManifest !== undefined && rootManifest.version !== uiManifest.version) {
+  fail(`root package.json (${rootManifest.version}) and packages/ui (${uiManifest.version}) versions must match`)
+}
+if (rootManifest !== undefined) {
+  const changelog = readFileSync(join(root, 'CHANGELOG.md'), 'utf8')
+  if (!changelog.includes(`## ${rootManifest.version}`)) {
+    fail(`CHANGELOG.md: missing a "## ${rootManifest.version}" section`)
+  }
+}
+
+// The READMEs are deliberately separate files, one language each.
+const CJK = /[\u4e00-\u9fff]/
+const readmeEn = readFileSync(join(root, 'README.md'), 'utf8')
+const readmeZh = readFileSync(join(root, 'README.zh.md'), 'utf8')
+if (CJK.test(readmeEn)) fail('README.md: must be English only (Chinese belongs in README.zh.md)')
+if (!CJK.test(readmeZh)) fail('README.zh.md: must be the Chinese README')
+if (!readmeEn.includes('README.zh.md')) fail('README.md: missing a link to README.zh.md')
+if (!readmeZh.includes('README.md')) fail('README.zh.md: missing a link to README.md')
+for (const image of new Set([...readmeEn.matchAll(/docs\/screenshots\/[^)"'\s]+\.png/g)].map((match) => match[0]))) {
+  if (!existsSync(join(root, image))) fail(`README.md references a missing screenshot: ${image}`)
+}
+for (const image of new Set([...readmeZh.matchAll(/docs\/screenshots\/[^)"'\s]+\.png/g)].map((match) => match[0]))) {
+  if (!existsSync(join(root, image))) fail(`README.zh.md references a missing screenshot: ${image}`)
+}
+
 // The adapter is a built artifact regenerated from a DSH release; these markers
 // catch a re-extraction that silently dropped the account/header patches.
 const adapter = readFileSync(join(root, 'packages', 'adapter', 'lib', 'index.js'), 'utf8')
@@ -115,7 +143,34 @@ if (!patch.includes("name: 'dsh-provider-enhance'")) {
   fail('packages/ui/cordis.patch.yml: row must insert this package')
 }
 
-for (const required of ['LICENSE', 'NOTICE.md', 'README.md', 'CHANGELOG.md', 'packages/adapter/LICENSE', 'packages/adapter/NOTICE.md']) {
+for (const required of [
+  'LICENSE',
+  'NOTICE.md',
+  'README.md',
+  'README.zh.md',
+  'CHANGELOG.md',
+  'SECURITY.md',
+  'CONTRIBUTING.md',
+  'CODE_OF_CONDUCT.md',
+  'SUPPORT.md',
+  'docs/architecture.md',
+  'docs/screenshots/provider-configurations.png',
+  'docs/screenshots/model-picker.png',
+  'scripts/doctor.mjs',
+  'scripts/install-test-peers.mjs',
+  'scripts/pack-check.mjs',
+  'scripts/sync-adapter.mjs',
+  'scripts/lib/accounts.mjs',
+  'patches/0001-accounts-and-headers.patch',
+  'packages/adapter/LICENSE',
+  'packages/adapter/NOTICE.md',
+  '.github/workflows/ci.yml',
+  '.github/workflows/release.yml',
+  '.github/workflows/codeql.yml',
+  '.github/dependabot.yml',
+  '.editorconfig',
+  '.nvmrc',
+]) {
   const present = new Set(files.map((file) => relative(root, file).split(sep).join('/')))
   if (!present.has(required)) fail(`missing ${required}`)
 }
@@ -126,6 +181,8 @@ const forbidden = [
   { pattern: /[A-Za-z]:[\\/]+Users[\\/]+/i, label: 'absolute user path' },
   { pattern: /[A-Za-z]:[\\/]+programs[\\/]+/i, label: 'absolute program path' },
   { pattern: /sk-[A-Za-z0-9]{20,}/, label: 'secret-like token' },
+  { pattern: /\bgh[pousr]_[A-Za-z0-9]{20,}/, label: 'GitHub token' },
+  { pattern: /-----BEGIN [A-Z ]*PRIVATE KEY-----/, label: 'private key' },
 ]
 for (const file of files.filter((path) => textExtensions.has(extname(path)))) {
   const text = readFileSync(file, 'utf8')

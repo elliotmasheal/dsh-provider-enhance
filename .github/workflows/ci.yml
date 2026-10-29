@@ -4,15 +4,47 @@ on:
   push:
   pull_request:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   check:
+    name: check (node ${{ matrix.node }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Offline checks (syntax, manifests, hygiene)
+        run: node scripts/check.mjs
+      - name: Published tarball check (client, patch, locale, icon)
+        run: node scripts/pack-check.mjs
+      - name: Install published DSH peers for the runtime tests
+        run: node scripts/install-test-peers.mjs
+      - name: Tests
+        env:
+          DSH_APP_NODE_MODULES: ${{ github.workspace }}/.test-dsh/node_modules
+        run: npm test
+
+  adapter-patch:
+    name: adapter patch reproduces the committed build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Offline checks
-        run: node scripts/check.mjs
-      - name: Header tests (skipped without a DSH install)
-        run: node --test tests/headers.test.mjs
+      - name: Rebuild the patched adapter from npm + patches
+        run: node scripts/sync-adapter.mjs --check
